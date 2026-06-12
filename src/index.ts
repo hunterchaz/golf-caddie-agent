@@ -224,8 +224,18 @@ app.post(
       const extras = [effect && 'effect', replyTo && 'thread', generatedImage && 'image', groupChatIcon && 'icon', removeMember && 'removeMember'].filter(Boolean).join(', ');
       console.log(`[timing] total: ${Date.now() - start}ms (${extras || 'text only'})`);
     } else if (reaction) {
-      // Reaction-only response - already saved to conversation history by chat()
-      console.log(`[main] Reaction-only response (saved to history for context)`);
+      // Reaction-only — force a fallback text response so golfer always gets feedback
+      const fallbacks = [
+        "bro... 💀",
+        "that hole is dead. forget it ever happened.",
+        "take a breath. smooth takeaway. one shot at a time.",
+        "we don't talk about that hole.",
+        "shake it off. next tee, fresh start.",
+        "everyone has one of those. move on.",
+      ];
+      const fallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+      await sendMessage(chatId, fallback);
+      console.log(`[main] Sent fallback text after reaction-only response`);
     }
 
     console.log(`[main] Reply sent to ${from}`);

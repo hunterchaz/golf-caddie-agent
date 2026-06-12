@@ -41,13 +41,18 @@ export function createWebhookHandler(onMessage: MessageHandler) {
         console.log(`[webhook] Full payload:`, JSON.stringify(event, null, 2));
       }
 
-      const { chat_id, from, recipient_phone, message, service } = event.data;
-
+      const data = event.data as any;
+const chat_id = data.chat?.id;
+const from = data.sender_handle?.handle;
+const recipient_phone = data.chat?.owner_handle?.handle;
+const message = { id: data.id, parts: data.parts, effect: data.effect, reply_to: data.reply_to };
+const service = data.service;
       // Only process messages sent to this bot's phone numbers
-      if (botNumbers.length > 0 && !botNumbers.includes(recipient_phone)) {
-        console.log(`[webhook] Skipping message to ${recipient_phone} (not this bot's number)`);
-        return;
-      }
+      const recipientPhone = recipient_phone || (event.data as any)?.chat?.owner_handle?.handle;
+if (botNumbers.length > 0 && recipientPhone && !botNumbers.includes(recipientPhone)) {
+  console.log(`[webhook] Skipping message to ${recipientPhone} (not this bot's number)`);
+  return;
+}
 
       // Skip messages from ourselves
       if (event.data.is_from_me) {

@@ -2,7 +2,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 
 // DynamoDB setup
-const client = new DynamoDBClient({ region: 'us-east-1' });
+const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-2' });
 const docClient = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME || 'linq-blue-agent-example';
 
@@ -17,7 +17,7 @@ export interface StoredMessage {
 }
 
 interface ConversationRecord {
-  pk: string;
+  PK: string;
   messages: StoredMessage[];
   lastActive: number;
   ttl: number;
@@ -27,7 +27,7 @@ export async function getConversation(chatId: string): Promise<StoredMessage[]> 
   try {
     const result = await docClient.send(new GetCommand({
       TableName: TABLE_NAME,
-      Key: { pk: `CHAT#${chatId}` },
+      Key: { PK: `CHAT#${chatId}` },
     }));
 
     if (!result.Item) return [];
@@ -60,7 +60,7 @@ export async function addMessage(chatId: string, role: 'user' | 'assistant', con
     await docClient.send(new PutCommand({
       TableName: TABLE_NAME,
       Item: {
-        pk: `CHAT#${chatId}`,
+        PK: `CHAT#${chatId}`,
         messages: trimmedMessages,
         lastActive: now,
         ttl: now + CONVERSATION_TTL_SECONDS,
@@ -75,7 +75,7 @@ export async function clearConversation(chatId: string): Promise<void> {
   try {
     await docClient.send(new DeleteCommand({
       TableName: TABLE_NAME,
-      Key: { pk: `CHAT#${chatId}` },
+      Key: { PK: `CHAT#${chatId}` },
     }));
   } catch (error) {
     console.error('[conversation] Error clearing conversation:', error);
@@ -103,7 +103,7 @@ export async function getUserProfile(handle: string): Promise<UserProfile | null
   try {
     const result = await docClient.send(new GetCommand({
       TableName: TABLE_NAME,
-      Key: { pk: `USER#${handle}` },
+      Key: { PK: `USER#${handle}` },
     }));
 
     if (!result.Item) return null;
@@ -130,7 +130,7 @@ export async function updateUserProfile(
     const now = Math.floor(Date.now() / 1000);
 
     const profile = {
-      pk: `USER#${handle}`,
+      PK: `USER#${handle}`,
       handle,
       name: updates.name ?? existing?.name ?? null,
       facts: updates.facts ?? existing?.facts ?? [],
@@ -191,7 +191,7 @@ export async function clearUserProfile(handle: string): Promise<boolean> {
   try {
     await docClient.send(new DeleteCommand({
       TableName: TABLE_NAME,
-      Key: { pk: `USER#${handle}` },
+      Key: { PK: `USER#${handle}` },
     }));
     console.log(`[conversation] Cleared profile for ${handle}`);
     return true;
